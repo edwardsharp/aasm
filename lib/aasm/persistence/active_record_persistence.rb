@@ -245,11 +245,19 @@ module AASM
           aasm_state_without_scope name, options
           
           unless self.respond_to?(name)
-            scope_options = lambda { where("#{table_name}.#{self.aasm_column}" => name.to_s) }
-            scope_method = ActiveRecord::VERSION::MAJOR >= 3 ? :scope : :named_scope
-            self.send(scope_method, name, scope_options)
+            scope_options = { "#{table_name}.#{self.aasm_column}" => name.to_s }
+            if ActiveRecord::VERSION::MAJOR >= 3
+              class_eval do
+                scope name, lambda { where(scope_options) }
+              end
+            else
+              class_eval do
+                named_scope name, :conditions => scope_options
+              end
+            end
+
           end
-          
+
         end
       end
     end
